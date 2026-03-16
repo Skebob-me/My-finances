@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Финансы</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ─── RESET & BASE ─────────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{
+  background:#0c0c10;color:#eeeef5;
+  font-family:-apple-system,'SF Pro Text','Segoe UI',system-ui,sans-serif;
+  min-height:100vh;-webkit-font-smoothing:antialiased;
+}
+
+/* ─── CSS VARS ─────────────────────────────────────────────────────────── */
+:root{
+  --bg0:#0c0c10;--bg1:#131318;--bg2:#1a1a22;--bg3:#222230;--bg4:#2c2c3c;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --text:#eeeef5;--text2:#9898b0;--text3:#55556a;
+  --accent:#6c5ce7;--accent-light:#8b7ff0;
+  --green:#00c896;--red:#ff4d6d;--amber:#ffb347;--blue:#4da6ff;
+  --r:14px;--rs:8px;
+}
+
+/* ─── LOCK SCREEN ──────────────────────────────────────────────────────── */
+#lock{
+  position:fixed;inset:0;background:var(--bg0);
+  display:flex;align-items:center;justify-content:center;
+  z-index:9999;padding:20px;
+}
+.lock-card{
+  width:100%;max-width:360px;
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:20px;padding:36px 32px;text-align:center;
+}
+.lock-icon{font-size:40px;margin-bottom:16px}
+.lock-title{font-size:22px;font-weight:700;letter-spacing:-0.4px;margin-bottom:6px}
+.lock-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.lock-input{
+  width:100%;height:48px;padding:0 16px;
+  background:var(--bg3);border:1.5px solid var(--border2);
+  border-radius:var(--rs);color:var(--text);font-size:16px;
+  outline:none;text-align:center;letter-spacing:0.1em;
+  transition:border-color .2s;margin-bottom:14px;
+}
+.lock-input:focus{border-color:var(--accent)}
+.lock-btn{
+  width:100%;height:48px;background:var(--accent);border:none;
+  border-radius:var(--rs);color:#fff;font-size:15px;font-weight:600;
+  cursor:pointer;transition:opacity .2s;
+}
+.lock-btn:hover{opacity:.85}
+.lock-error{font-size:12px;color:var(--red);margin-top:10px;min-height:18px}
+
+/* ─── APP LAYOUT ───────────────────────────────────────────────────────── */
+#app{display:none;flex-direction:column;min-height:100vh}
+.app-inner{max-width:960px;margin:0 auto;width:100%;padding:0 16px}
+
+/* ─── HEADER ───────────────────────────────────────────────────────────── */
+header{
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  background:rgba(12,12,16,.92);backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.header-inner{
+  max-width:960px;margin:0 auto;padding:0 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{
+  width:32px;height:32px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent),#4da6ff);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.logo-name{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.header-meta{font-size:11px;color:var(--text3);text-align:right;line-height:1.5}
+
+/* ─── MONTH PILLS ──────────────────────────────────────────────────────── */
+.month-wrap{
+  overflow-x:auto;scrollbar-width:none;
+  padding:14px 0 10px;margin-bottom:4px;
+}
+.month-wrap::-webkit-scrollbar{display:none}
+.month-row{display:flex;gap:6px;padding:0 16px}
+.mpill{
+  padding:6px 14px;border-radius:100px;font-size:13px;font-weight:500;
+  border:1px solid var(--border);background:var(--bg2);color:var(--text2);
+  cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;
+}
+.mpill:hover{border-color:var(--accent-light);color:var(--text)}
+.mpill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ─── NAV ──────────────────────────────────────────────────────────────── */
+.nav-wrap{
+  display:flex;gap:2px;background:var(--bg2);border-radius:var(--rs);
+  padding:3px;margin:0 16px 20px;overflow-x:auto;scrollbar-width:none;
+}
+.nav-wrap::-webkit-scrollbar{display:none}
+.nbtn{
+  padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;
+  border:none;background:none;color:var(--text2);cursor:pointer;
+  flex-shrink:0;transition:all .15s;white-space:nowrap;
+}
+.nbtn:hover{color:var(--text)}
+.nbtn.on{background:var(--bg4);color:var(--text)}
+
+/* ─── PAGES ────────────────────────────────────────────────────────────── */
+.page{display:none;padding:0 16px 32px}
+.page.on{display:block}
+
+/* ─── METRICS ──────────────────────────────────────────────────────────── */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+@media(min-width:580px){.metrics{grid-template-columns:repeat(4,1fr)}}
+.mc{
+  background:var(--bg2);border-radius:var(--r);padding:14px 16px;
+  border:1px solid var(--border);position:relative;overflow:hidden;
+}
+.mc::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+}
+.mc.cg::after{background:var(--green)}
+.mc.cr::after{background:var(--red)}
+.mc.ca::after{background:var(--amber)}
+.mc.cb::after{background:var(--blue)}
+.mc-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.mc-val{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.mc-val.g{color:var(--green)}.mc-val.r{color:var(--red)}.mc-val.a{color:var(--amber)}.mc-val.b{color:var(--blue)}
+.mc-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* ─── CARD ─────────────────────────────────────────────────────────────── */
+.card{background:var(--bg2);border-radius:var(--r);padding:18px;border:1px solid var(--border);margin-bottom:14px}
+.card-hdr{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.card-hdr em{color:var(--text2);font-style:normal;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px}
+
+/* ─── GRID ─────────────────────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:680px){.g2{grid-template-columns:1fr 1fr}}
+
+/* ─── BARS ─────────────────────────────────────────────────────────────── */
+.bars{display:flex;flex-direction:column;gap:9px}
+.brow{display:flex;align-items:center;gap:8px}
+.blabel{width:108px;flex-shrink:0;font-size:12px;color:var(--text2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btrack{flex:1;height:16px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.bfill{height:100%;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.bamt{width:76px;flex-shrink:0;font-size:12px;font-weight:600;text-align:right}
+@media(max-width:400px){.blabel{width:80px;font-size:11px}.bamt{width:62px;font-size:11px}}
+
+/* ─── DONUT LEGEND ─────────────────────────────────────────────────────── */
+.dleg{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.dleg-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.dleg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dleg-name{flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dleg-amt{font-weight:600}
+.dleg-pct{color:var(--text3);font-size:11px;width:32px;text-align:right}
+
+/* ─── CHART WRAP ───────────────────────────────────────────────────────── */
+.cw{position:relative;width:100%}
+
+/* ─── TREND BADGES ─────────────────────────────────────────────────────── */
+.trend{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:600;padding:2px 6px;border-radius:100px}
+.t-up{background:rgba(255,77,109,.12);color:var(--red)}
+.t-dn{background:rgba(0,200,150,.12);color:var(--green)}
+.t-eq{background:rgba(152,152,176,.1);color:var(--text2)}
+
+/* ─── CATEGORY RANK ────────────────────────────────────────────────────── */
+.crank{display:flex;flex-direction:column;gap:7px}
+.crow{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--bg3);border-radius:var(--rs);cursor:default;
+  border:1px solid transparent;transition:border-color .15s;
+}
+.crow:hover{border-color:var(--border2)}
+.crow-n{width:18px;font-size:12px;color:var(--text3);font-weight:700;flex-shrink:0}
+.crow-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.crow-name{flex:1;font-size:13px;font-weight:500}
+.crow-pct{font-size:12px;color:var(--text2);width:34px;text-align:right}
+.crow-amt{font-size:13px;font-weight:700;width:86px;text-align:right}
+
+/* ─── MONTHLY TABLE ────────────────────────────────────────────────────── */
+.mtbl-wrap{overflow-x:auto;border-radius:var(--rs);border:1px solid var(--border)}
+.mtbl{width:100%;border-collapse:collapse;font-size:12px;min-width:480px}
+.mtbl th{
+  padding:9px 10px;text-align:right;font-size:11px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--text3);
+  background:var(--bg3);white-space:nowrap;border-bottom:1px solid var(--border);
+}
+.mtbl th:first-child{text-align:left}
+.mtbl td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--border)}
+.mtbl tr:last-child td{border-bottom:none}
+.mtbl td:first-child{text-align:left;font-weight:500}
+.mtbl tr:hover td{background:rgba(255,255,255,.02)}
+.h0{color:var(--text2)}.h1{color:var(--amber)}.h2{color:var(--red)}
+
+/* ─── TRANSACTIONS ─────────────────────────────────────────────────────── */
+.tf{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.ti{
+  flex:1;min-width:130px;height:38px;padding:0 12px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--rs);color:var(--text);font-size:13px;outline:none;
+}
+.ti:focus{border-color:var(--accent)}
+select.ti{cursor:pointer}
+option{background:var(--bg3)}
+.tsummary{font-size:12px;color:var(--text2);margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap}
+.tsummary strong{color:var(--text)}
+.ttbl-wrap{overflow-x:auto;border-radius:var(--rs);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  padding:9px 12px;text-align:left;font-size:11px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--text3);
+  background:var(--bg3);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody td{padding:9px 12px;vertical-align:middle}
+.td-date{color:var(--text2);white-space:nowrap;font-size:12px}
+.td-desc{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:520px){.td-desc{max-width:110px}}
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:500;white-space:nowrap}
+.td-amt{text-align:right;font-weight:700;white-space:nowrap}
+.aneg{color:var(--red)}.apos{color:var(--green)}
+
+/* ─── PAGINATION ───────────────────────────────────────────────────────── */
+.pag{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px}
+.pbtn{
+  width:32px;height:32px;border-radius:7px;border:1px solid var(--border);
+  background:var(--bg2);color:var(--text2);font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.pbtn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pbtn:disabled{opacity:.3;cursor:default}
+.pinfo{font-size:13px;color:var(--text2)}
+
+/* ─── INSIGHTS ─────────────────────────────────────────────────────────── */
+.insight-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px}
+@media(min-width:600px){.insight-grid{grid-template-columns:1fr 1fr}}
+.insight{
+  background:var(--bg2);border-radius:var(--r);padding:16px;
+  border:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;
+}
+.insight-icon{font-size:24px;flex-shrink:0}
+.insight-label{font-size:11px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+.insight-val{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.insight-sub{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* ─── MISC ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+.sep{height:20px}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ LOCK SCREEN ═══════════════════════════════════════ -->
+<div id="lock">
+  <div class="lock-card">
+    <div class="lock-icon">🔐</div>
+    <div class="lock-title">Мои финансы</div>
+    <div class="lock-sub">Введите пароль для доступа</div>
+    <input class="lock-input" id="pwd" type="password" placeholder="••••••" maxlength="20"
+      onkeydown="if(event.key==='Enter')unlock()">
+    <button class="lock-btn" onclick="unlock()">Войти</button>
+    <div class="lock-error" id="perr"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ APP ════════════════════════════════════════════════ -->
+<div id="app">
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-mark">💳</div>
+        <div class="logo-name">Мои финансы</div>
+      </div>
+      <div class="header-meta" id="hmeta"></div>
+    </div>
+  </header>
+
+  <div class="month-wrap">
+    <div class="month-row" id="month-row"></div>
+  </div>
+
+  <div class="nav-wrap">
+    <button class="nbtn on" onclick="nav('overview',this)">Обзор</button>
+    <button class="nbtn" onclick="nav('insights',this)">Инсайты</button>
+    <button class="nbtn" onclick="nav('categories',this)">Категории</button>
+    <button class="nbtn" onclick="nav('monthly',this)">По месяцам</button>
+    <button class="nbtn" onclick="nav('tx',this)">Транзакции</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="p-overview" class="page on">
+    <div class="metrics" id="ov-m"></div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hdr">Топ расходов</div>
+        <div class="bars" id="ov-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr">Структура <em id="donut-lbl"></em></div>
+        <div class="cw" style="height:190px"><canvas id="c-donut"></canvas></div>
+        <div class="dleg" id="dleg"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Доходы и расходы по месяцам</div>
+      <div class="cw" style="height:200px"><canvas id="c-mbar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div id="p-insights" class="page">
+    <div class="insight-grid" id="ins-grid"></div>
+    <div class="card">
+      <div class="card-hdr">Динамика ключевых категорий</div>
+      <div class="cw" style="height:240px"><canvas id="c-lines"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Сравнение месяц к месяцу</div>
+      <div id="ins-compare"></div>
+    </div>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div id="p-categories" class="page">
+    <div class="card">
+      <div class="card-hdr">Расходы по категориям <em id="cat-lbl"></em></div>
+      <div class="cw" id="cat-cw" style="height:340px"><canvas id="c-cat"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Рейтинг категорий</div>
+      <div class="crank" id="crank"></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY -->
+  <div id="p-monthly" class="page">
+    <div class="card">
+      <div class="card-hdr">Расходы по категориям — помесячно</div>
+      <div class="cw" style="height:280px"><canvas id="c-stack"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Сравнительная таблица</div>
+      <div class="mtbl-wrap"><table class="mtbl" id="mtbl"></table></div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS -->
+  <div id="p-tx" class="page">
+    <div class="tf">
+      <input type="text" class="ti" id="ts" placeholder="🔍 Поиск..." oninput="renderTx()" style="min-width:150px">
+      <select class="ti" id="tm" onchange="renderTx()" style="max-width:150px">
+        <option value="all">Все месяцы</option>
+      </select>
+      <select class="ti" id="tc" onchange="renderTx()" style="max-width:170px">
+        <option value="all">Все категории</option>
+      </select>
+      <select class="ti" id="tt" onchange="renderTx()" style="max-width:130px">
+        <option value="all">Все типы</option>
+        <option value="Расход">Расходы</option>
+        <option value="Доход">Доходы</option>
+      </select>
+    </div>
+    <div class="tsummary" id="tsum"></div>
+    <div class="ttbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Дата</th><th>Описание</th><th>Категория</th>
+          <th style="text-align:right">Сумма</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pag" id="tpag"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// CONFIG — CHANGE PASSWORD HERE
+// ════════════════════════════════════════════════════════════════════════════
+const PASSWORD = 'finance2025';
+
+// ════════════════════════════════════════════════════════════════════════════
+// DATA — автоматически обновляется при каждой выгрузке из банка
+// ════════════════════════════════════════════════════════════════════════════
+const TX = [
+{"d":"09.09.2025","desc":"Плата за обслуживание","a":-0.98,"t":"Расход","c":"Банковские услуги","m":"09.2025"},
+{"d":"09.09.2025","desc":"Пополнение СБП","a":63,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"12.09.2025","desc":"Внешний перевод","a":-1500,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"12.09.2025","desc":"Пополнение Сбербанк","a":1500,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"14.09.2025","desc":"Плата за обслуживание","a":-98.02,"t":"Расход","c":"Банковские услуги","m":"09.2025"},
+{"d":"14.09.2025","desc":"Плата за оповещения","a":-99,"t":"Расход","c":"Банковские услуги","m":"09.2025"},
+{"d":"14.09.2025","desc":"Внешний перевод","a":-850,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"14.09.2025","desc":"Пополнение СБП","a":8528.72,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"15.09.2025","desc":"ATAK 461","a":-1036.53,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"15.09.2025","desc":"Инвесткопилка","a":-5262.47,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"15.09.2025","desc":"Yandex Scooters","a":-268,"t":"Расход","c":"Транспорт","m":"09.2025"},
+{"d":"15.09.2025","desc":"Guruscribe подписка","a":-33,"t":"Расход","c":"Подписки","m":"09.2025"},
+{"d":"15.09.2025","desc":"OZON","a":-431,"t":"Расход","c":"Интернет-покупки","m":"09.2025"},
+{"d":"15.09.2025","desc":"Пополнение СБП","a":30228,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"16.09.2025","desc":"Инвесткопилка","a":-87,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"16.09.2025","desc":"QSR ресторан","a":-813,"t":"Расход","c":"Кафе и рестораны","m":"09.2025"},
+{"d":"16.09.2025","desc":"Внутрибанк перевод","a":5000,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"17.09.2025","desc":"VV_KSO прочее","a":-128,"t":"Расход","c":"Прочие расходы","m":"09.2025"},
+{"d":"17.09.2025","desc":"QSR ресторан","a":-417,"t":"Расход","c":"Кафе и рестораны","m":"09.2025"},
+{"d":"17.09.2025","desc":"ROSNEFT","a":-1499.66,"t":"Расход","c":"Топливо","m":"09.2025"},
+{"d":"17.09.2025","desc":"Инвесткопилка","a":-155.34,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"17.09.2025","desc":"Внешний перевод","a":-1100,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"18.09.2025","desc":"PYATEROCHKA","a":-329.98,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"18.09.2025","desc":"Инвесткопилка","a":-70.02,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"18.09.2025","desc":"Внутрибанк перевод","a":491,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"18.09.2025","desc":"Внешний перевод","a":-1000,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"19.09.2025","desc":"KALYANYJ BAR","a":-2900,"t":"Расход","c":"Развлечения","m":"09.2025"},
+{"d":"19.09.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"09.2025"},
+{"d":"19.09.2025","desc":"Внутренний перевод","a":-3400,"t":"Расход","c":"Внутренние переводы","m":"09.2025"},
+{"d":"19.09.2025","desc":"Внешний перевод","a":-15000,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"19.09.2025","desc":"Внешний банк перевод","a":-1881,"t":"Расход","c":"Банковские переводы","m":"09.2025"},
+{"d":"19.09.2025","desc":"Инвесткопилка","a":-30354,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"19.09.2025","desc":"Пополнение СБП","a":87058.63,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"19.09.2025","desc":"PARLEMARKET","a":-120,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"19.09.2025","desc":"SNEDI FEDI","a":-526,"t":"Расход","c":"Кафе и рестораны","m":"09.2025"},
+{"d":"19.09.2025","desc":"Вывод брокер","a":600,"t":"Доход","c":"Инвестиционные доходы","m":"09.2025"},
+{"d":"20.09.2025","desc":"СИННАБОН","a":-1125,"t":"Расход","c":"Кафе и рестораны","m":"09.2025"},
+{"d":"20.09.2025","desc":"Made in Vietnam","a":-450,"t":"Расход","c":"Кафе и рестораны","m":"09.2025"},
+{"d":"20.09.2025","desc":"Пополнение СБП","a":1500,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"20.09.2025","desc":"BARS-SERVIS","a":-6000,"t":"Расход","c":"Услуги","m":"09.2025"},
+{"d":"20.09.2025","desc":"Внешний перевод","a":-10000,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"20.09.2025","desc":"NEFTMAGISTRALO","a":-300,"t":"Расход","c":"Топливо","m":"09.2025"},
+{"d":"20.09.2025","desc":"Инвесткопилка","a":-108,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"20.09.2025","desc":"ROSNEFT","a":-1999.95,"t":"Расход","c":"Топливо","m":"09.2025"},
+{"d":"21.09.2025","desc":"Библейский центр","a":-500,"t":"Расход","c":"Пожертвования","m":"09.2025"},
+{"d":"21.09.2025","desc":"PYATEROCHKA","a":-59.99,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"21.09.2025","desc":"Инвесткопилка","a":-125.07,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"21.09.2025","desc":"ROSNEFT","a":-1484.94,"t":"Расход","c":"Топливо","m":"09.2025"},
+{"d":"21.09.2025","desc":"IP AKULOV услуги","a":-1630,"t":"Расход","c":"Услуги","m":"09.2025"},
+{"d":"22.09.2025","desc":"YANDEX MARKET","a":-959,"t":"Расход","c":"Интернет-покупки","m":"09.2025"},
+{"d":"22.09.2025","desc":"Магнит","a":-1288.78,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"22.09.2025","desc":"Инвесткопилка","a":-79.53,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"22.09.2025","desc":"TOK3 доставка","a":-931.69,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"23.09.2025","desc":"MAGNIT MM","a":-995.92,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"23.09.2025","desc":"Инвесткопилка","a":-64.08,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"23.09.2025","desc":"IP SPIRINA услуги","a":-340,"t":"Расход","c":"Услуги","m":"09.2025"},
+{"d":"23.09.2025","desc":"Внешний перевод","a":-960,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"24.09.2025","desc":"Внешний перевод","a":-1350,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"24.09.2025","desc":"Внешний банк перевод","a":-1125,"t":"Расход","c":"Банковские переводы","m":"09.2025"},
+{"d":"24.09.2025","desc":"Инвесткопилка","a":-67,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"24.09.2025","desc":"Guruscribe подписка","a":-33,"t":"Расход","c":"Подписки","m":"09.2025"},
+{"d":"25.09.2025","desc":"Инвесткопилка","a":-165,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"25.09.2025","desc":"YANDEX GO/TAXI","a":-635,"t":"Расход","c":"Транспорт","m":"09.2025"},
+{"d":"25.09.2025","desc":"PYATEROCHKA","a":-89.98,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"25.09.2025","desc":"TEPLO Place","a":-1950,"t":"Расход","c":"Кафе и рестораны","m":"09.2025"},
+{"d":"25.09.2025","desc":"YANDEX TAXI","a":-320,"t":"Расход","c":"Транспорт","m":"09.2025"},
+{"d":"25.09.2025","desc":"SNEDI FEDI","a":-517,"t":"Расход","c":"Кафе и рестораны","m":"09.2025"},
+{"d":"25.09.2025","desc":"Внутрибанк перевод","a":8500,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"25.09.2025","desc":"Mos.Transport","a":-74,"t":"Расход","c":"Транспорт","m":"09.2025"},
+{"d":"25.09.2025","desc":"Внешний банк перевод","a":-562.5,"t":"Расход","c":"Банковские переводы","m":"09.2025"},
+{"d":"26.09.2025","desc":"Вывод брокер","a":7700,"t":"Доход","c":"Инвестиционные доходы","m":"09.2025"},
+{"d":"26.09.2025","desc":"Пополнение Сбербанк","a":887,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"26.09.2025","desc":"Инвесткопилка","a":-57,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"26.09.2025","desc":"QSR ресторан","a":-1243,"t":"Расход","c":"Кафе и рестораны","m":"09.2025"},
+{"d":"26.09.2025","desc":"GAZPROMNEFT","a":-3862,"t":"Расход","c":"Топливо","m":"09.2025"},
+{"d":"26.09.2025","desc":"AVTOMOYKA","a":-450,"t":"Расход","c":"Мойка автомобиля","m":"09.2025"},
+{"d":"27.09.2025","desc":"Внешний перевод","a":-5000,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"27.09.2025","desc":"Вывод брокер","a":5000,"t":"Доход","c":"Инвестиционные доходы","m":"09.2025"},
+{"d":"28.09.2025","desc":"Инвесткопилка","a":-33.06,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"28.09.2025","desc":"TOK3 доставка","a":-2066.94,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"28.09.2025","desc":"Внешний перевод","a":-288,"t":"Расход","c":"Переводы","m":"09.2025"},
+{"d":"29.09.2025","desc":"Guruscribe подписка","a":-286,"t":"Расход","c":"Подписки","m":"09.2025"},
+{"d":"29.09.2025","desc":"Инвесткопилка","a":-14,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"29.09.2025","desc":"Внутрибанк перевод","a":5000,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"29.09.2025","desc":"Внешний банк перевод","a":-1687.5,"t":"Расход","c":"Банковские переводы","m":"09.2025"},
+{"d":"30.09.2025","desc":"Содружество церквей","a":-4000,"t":"Расход","c":"Пожертвования","m":"09.2025"},
+{"d":"30.09.2025","desc":"Пополнение СБП","a":741,"t":"Доход","c":"Доходы","m":"09.2025"},
+{"d":"30.09.2025","desc":"VKUSVILL","a":-1388.05,"t":"Расход","c":"Продукты","m":"09.2025"},
+{"d":"30.09.2025","desc":"Инвесткопилка","a":-11.95,"t":"Расход","c":"Инвестиции","m":"09.2025"},
+{"d":"01.10.2025","desc":"Внешний перевод","a":-1332,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"01.10.2025","desc":"Инвесткопилка","a":-196,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"01.10.2025","desc":"VV_7103 прочее","a":-604,"t":"Расход","c":"Прочие расходы","m":"10.2025"},
+{"d":"01.10.2025","desc":"htv прочее","a":-200,"t":"Расход","c":"Прочие расходы","m":"10.2025"},
+{"d":"02.10.2025","desc":"Mos.Transport","a":-268,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"02.10.2025","desc":"Инвесткопилка","a":-136,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"02.10.2025","desc":"QSR ресторан","a":-496,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"02.10.2025","desc":"АЗК топливо","a":-1499.44,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"02.10.2025","desc":"Внешний перевод","a":-5000,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"02.10.2025","desc":"Внутрибанк перевод","a":10000,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"03.10.2025","desc":"Внешний перевод","a":-8655,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"03.10.2025","desc":"Инвесткопилка","a":-440,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"03.10.2025","desc":"Кэшбэк","a":350,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"03.10.2025","desc":"Внутренний перевод","a":-900,"t":"Расход","c":"Внутренние переводы","m":"10.2025"},
+{"d":"03.10.2025","desc":"csat прочее","a":-3410,"t":"Расход","c":"Прочие расходы","m":"10.2025"},
+{"d":"03.10.2025","desc":"Вывод брокер","a":8400,"t":"Доход","c":"Инвестиционные доходы","m":"10.2025"},
+{"d":"03.10.2025","desc":"МосОблЕИРЦ","a":-10251.39,"t":"Расход","c":"Коммуналка","m":"10.2025"},
+{"d":"03.10.2025","desc":"МосЭнергоСбыт","a":-3258.75,"t":"Расход","c":"Коммуналка","m":"10.2025"},
+{"d":"03.10.2025","desc":"Внешний банк перевод","a":-1881,"t":"Расход","c":"Банковские переводы","m":"10.2025"},
+{"d":"03.10.2025","desc":"Инвесткопилка","a":-32600.33,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"03.10.2025","desc":"Пополнение СБП","a":87000,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"04.10.2025","desc":"PYATEROCHKA","a":-99.99,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"04.10.2025","desc":"Внутренний перевод","a":-3250,"t":"Расход","c":"Внутренние переводы","m":"10.2025"},
+{"d":"04.10.2025","desc":"MAGNIT MM","a":-324.97,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"04.10.2025","desc":"Инвесткопилка","a":-317.03,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"04.10.2025","desc":"VV_7103 прочее","a":-238,"t":"Расход","c":"Прочие расходы","m":"10.2025"},
+{"d":"04.10.2025","desc":"QSR ресторан","a":-520,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"04.10.2025","desc":"BIZONE LOUNGE","a":-3090,"t":"Расход","c":"Развлечения","m":"10.2025"},
+{"d":"05.10.2025","desc":"OZON","a":-873,"t":"Расход","c":"Интернет-покупки","m":"10.2025"},
+{"d":"05.10.2025","desc":"Библейский центр","a":-500,"t":"Расход","c":"Пожертвования","m":"10.2025"},
+{"d":"05.10.2025","desc":"KRASNOE&BELOE","a":-265.15,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"05.10.2025","desc":"OSSP M11","a":-800,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"05.10.2025","desc":"AVTOMOIKA","a":-200,"t":"Расход","c":"Мойка автомобиля","m":"10.2025"},
+{"d":"05.10.2025","desc":"Пополнение СБП","a":2750,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"05.10.2025","desc":"LENTA","a":-5545.07,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"06.10.2025","desc":"VV_7103 прочее","a":-170,"t":"Расход","c":"Прочие расходы","m":"10.2025"},
+{"d":"06.10.2025","desc":"Инвесткопилка","a":-87,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"06.10.2025","desc":"OZON","a":-843,"t":"Расход","c":"Интернет-покупки","m":"10.2025"},
+{"d":"07.10.2025","desc":"Внешний перевод","a":-1800,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"07.10.2025","desc":"Инвесткопилка","a":-76,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"07.10.2025","desc":"VV_7103 прочее","a":-248,"t":"Расход","c":"Прочие расходы","m":"10.2025"},
+{"d":"07.10.2025","desc":"OZON","a":-176,"t":"Расход","c":"Интернет-покупки","m":"10.2025"},
+{"d":"08.10.2025","desc":"Пополнение СБП","a":600,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"08.10.2025","desc":"QSR ресторан","a":-1281,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"08.10.2025","desc":"Инвесткопилка","a":-19,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"08.10.2025","desc":"Внешний перевод","a":-40400,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"08.10.2025","desc":"Внутрибанк перевод","a":40000,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"09.10.2025","desc":"PYATEROCHKA","a":-587.92,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"09.10.2025","desc":"Инвесткопилка","a":-312.77,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"09.10.2025","desc":"Mos.Transport","a":-222,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"09.10.2025","desc":"YANDEX TAXI","a":-422,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"09.10.2025","desc":"REST TSVETNOY","a":-326,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"09.10.2025","desc":"PARLEMARKET","a":-660,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"09.10.2025","desc":"SNEDI FEDI","a":-631.3,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"09.10.2025","desc":"Вывод брокер","a":5000,"t":"Доход","c":"Инвестиционные доходы","m":"10.2025"},
+{"d":"09.10.2025","desc":"istranetmarket","a":-500,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"09.10.2025","desc":"Внешний банк перевод","a":-562.5,"t":"Расход","c":"Банковские переводы","m":"10.2025"},
+{"d":"09.10.2025","desc":"ROSNEFT","a":-1999.5,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"10.10.2025","desc":"PYATEROCHKA","a":-342.94,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"10.10.2025","desc":"Инвесткопилка","a":-87.06,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"10.10.2025","desc":"OSSP M11","a":-570,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"11.10.2025","desc":"MAGNIT MM","a":-729.32,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"11.10.2025","desc":"KRASNOE&BELOE","a":-99.98,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"11.10.2025","desc":"YANDEX TAXI","a":-423,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"11.10.2025","desc":"PYATEROCHKA","a":-129.99,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"11.10.2025","desc":"KORFOOD","a":-290,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"11.10.2025","desc":"Внешний перевод","a":-2200,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"11.10.2025","desc":"ROSNEFT","a":-1999.5,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"11.10.2025","desc":"Внутренний перевод","a":-2000,"t":"Расход","c":"Внутренние переводы","m":"10.2025"},
+{"d":"11.10.2025","desc":"Пополнение СБП","a":2000,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"12.10.2025","desc":"Пополнение СБП","a":1500,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"12.10.2025","desc":"Внутрибанк перевод","a":1940,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"12.10.2025","desc":"LAGUNA LOUNGE","a":-2000,"t":"Расход","c":"Развлечения","m":"10.2025"},
+{"d":"13.10.2025","desc":"Пополнение СБП","a":1000,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"13.10.2025","desc":"Инвесткопилка","a":-79,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"13.10.2025","desc":"KIOTO ресторан","a":-3995,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"13.10.2025","desc":"OZON","a":-326,"t":"Расход","c":"Интернет-покупки","m":"10.2025"},
+{"d":"14.10.2025","desc":"ROSNEFT","a":-1499.74,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"14.10.2025","desc":"Внутренний перевод","a":-320,"t":"Расход","c":"Внутренние переводы","m":"10.2025"},
+{"d":"14.10.2025","desc":"Внешний банк перевод","a":-1125,"t":"Расход","c":"Банковские переводы","m":"10.2025"},
+{"d":"14.10.2025","desc":"T-Bank подписка","a":-199,"t":"Расход","c":"Подписки","m":"10.2025"},
+{"d":"14.10.2025","desc":"KIOTO ресторан","a":-910,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"14.10.2025","desc":"Инвесткопилка","a":-91,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"14.10.2025","desc":"YANDEX PLUS подписка","a":-399,"t":"Расход","c":"Подписки","m":"10.2025"},
+{"d":"15.10.2025","desc":"flowwow","a":-4758,"t":"Расход","c":"Интернет-покупки","m":"10.2025"},
+{"d":"15.10.2025","desc":"Пополнение СБП","a":3055.27,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"15.10.2025","desc":"TOK3 доставка","a":-2205.38,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"15.10.2025","desc":"Инвесткопилка","a":-136.62,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"15.10.2025","desc":"Вывод брокер","a":105.19,"t":"Доход","c":"Инвестиционные доходы","m":"10.2025"},
+{"d":"15.10.2025","desc":"Внутрибанк перевод","a":11729.3,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"16.10.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"16.10.2025","desc":"Инвесткопилка","a":-207,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"16.10.2025","desc":"Внутренний перевод","a":-890,"t":"Расход","c":"Внутренние переводы","m":"10.2025"},
+{"d":"16.10.2025","desc":"PARLEMARKET","a":-140,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"16.10.2025","desc":"SNEDI FEDI","a":-605,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"16.10.2025","desc":"htv прочее","a":-200,"t":"Расход","c":"Прочие расходы","m":"10.2025"},
+{"d":"17.10.2025","desc":"YARCHE кафе","a":-655.91,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"18.10.2025","desc":"AROMATNYJ MIR","a":-329.57,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"18.10.2025","desc":"Внешний перевод","a":-925,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"18.10.2025","desc":"AVTOMOYKA","a":-400,"t":"Расход","c":"Мойка автомобиля","m":"10.2025"},
+{"d":"18.10.2025","desc":"GAZPROMNEFT","a":-2000.05,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"18.10.2025","desc":"Пополнение Сбербанк","a":9850,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"19.10.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"19.10.2025","desc":"SPAR","a":-186.9,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"19.10.2025","desc":"Внешний перевод","a":-6560,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"19.10.2025","desc":"OSSP M11","a":-1250,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"19.10.2025","desc":"Внутрибанк перевод","a":725,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"19.10.2025","desc":"Магазин продукты","a":-5800,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"20.10.2025","desc":"Лента","a":-3625.71,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"20.10.2025","desc":"Вывод брокер","a":15122.92,"t":"Доход","c":"Инвестиционные доходы","m":"10.2025"},
+{"d":"20.10.2025","desc":"Внешний банк перевод","a":-562.5,"t":"Расход","c":"Банковские переводы","m":"10.2025"},
+{"d":"20.10.2025","desc":"Внутренний перевод","a":-17000,"t":"Расход","c":"Внутренние переводы","m":"10.2025"},
+{"d":"20.10.2025","desc":"Инвесткопилка","a":-15000,"t":"Расход","c":"Инвестиции","m":"10.2025"},
+{"d":"20.10.2025","desc":"Пополнение СБП","a":83217.17,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"21.10.2025","desc":"OZON","a":-531,"t":"Расход","c":"Интернет-покупки","m":"10.2025"},
+{"d":"21.10.2025","desc":"YM Kaspersky","a":-2159,"t":"Расход","c":"Подписки","m":"10.2025"},
+{"d":"21.10.2025","desc":"Вывод брокер","a":52,"t":"Доход","c":"Инвестиционные доходы","m":"10.2025"},
+{"d":"22.10.2025","desc":"Внешний перевод","a":-9750,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"22.10.2025","desc":"ROSNEFT","a":-4017.47,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"22.10.2025","desc":"OOO Geraekspert","a":-2800,"t":"Расход","c":"Услуги","m":"10.2025"},
+{"d":"22.10.2025","desc":"BYURO PEREVODOV","a":-27270,"t":"Расход","c":"Услуги","m":"10.2025"},
+{"d":"22.10.2025","desc":"МосЭнергоСбыт","a":-2879.25,"t":"Расход","c":"Коммуналка","m":"10.2025"},
+{"d":"22.10.2025","desc":"Пополнение Сбербанк","a":20000,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"23.10.2025","desc":"BURGER KING","a":-444.98,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"23.10.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"23.10.2025","desc":"TSVETNOY ресторан","a":-2200,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"23.10.2025","desc":"SPAR","a":-139.8,"t":"Расход","c":"Продукты","m":"10.2025"},
+{"d":"23.10.2025","desc":"REST TSVETNOY","a":-639,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"23.10.2025","desc":"KOSMOS KITCHEN","a":-1145,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"23.10.2025","desc":"Grillnchill","a":-1100,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"23.10.2025","desc":"newrigavillage услуги","a":-8000,"t":"Расход","c":"Услуги","m":"10.2025"},
+{"d":"24.10.2025","desc":"Пополнение СБП","a":3550,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"24.10.2025","desc":"KALYANYJ BAR","a":-1750,"t":"Расход","c":"Развлечения","m":"10.2025"},
+{"d":"24.10.2025","desc":"QSR ресторан","a":-324,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"24.10.2025","desc":"KIOTO ресторан","a":-3241,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"25.10.2025","desc":"Пополнение СБП","a":1800,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"25.10.2025","desc":"BABL TII","a":-450,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"25.10.2025","desc":"IP SPIRINA услуги","a":-3480,"t":"Расход","c":"Услуги","m":"10.2025"},
+{"d":"25.10.2025","desc":"GAZPROMNEFT","a":-279,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"25.10.2025","desc":"LEMANAPROGPB топливо","a":-106,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"25.10.2025","desc":"AVTOMOYKA","a":-300,"t":"Расход","c":"Мойка автомобиля","m":"10.2025"},
+{"d":"26.10.2025","desc":"QSR ресторан","a":-1421,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"26.10.2025","desc":"Внешний перевод","a":-1500,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"26.10.2025","desc":"YARCHE кафе","a":-314.95,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"27.10.2025","desc":"KIOTO ресторан","a":-870,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"27.10.2025","desc":"Пополнение Сбербанк","a":2185,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"28.10.2025","desc":"Пополнение СБП","a":1500,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"28.10.2025","desc":"МосЭнергоСбыт","a":-90.75,"t":"Расход","c":"Коммуналка","m":"10.2025"},
+{"d":"29.10.2025","desc":"Внутрибанк перевод","a":941.12,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"30.10.2025","desc":"REST TSVETNOY","a":-442,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"30.10.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"30.10.2025","desc":"OZON","a":-975,"t":"Расход","c":"Интернет-покупки","m":"10.2025"},
+{"d":"30.10.2025","desc":"TOM YAM","a":-620,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"30.10.2025","desc":"ROSNEFT","a":-1999.42,"t":"Расход","c":"Топливо","m":"10.2025"},
+{"d":"31.10.2025","desc":"Mos.Transport","a":-74,"t":"Расход","c":"Транспорт","m":"10.2025"},
+{"d":"31.10.2025","desc":"Внешний перевод","a":-2000,"t":"Расход","c":"Переводы","m":"10.2025"},
+{"d":"31.10.2025","desc":"Внутрибанк перевод","a":6500,"t":"Доход","c":"Доходы","m":"10.2025"},
+{"d":"31.10.2025","desc":"TOM YAM","a":-620,"t":"Расход","c":"Кафе и рестораны","m":"10.2025"},
+{"d":"01.11.2025","desc":"Mos.Transport","a":-222,"t":"Расход","c":"Транспорт","m":"11.2025"},
+{"d":"01.11.2025","desc":"Внутрибанк перевод","a":13847,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"01.11.2025","desc":"FRANK BY BASTA","a":-4930,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"01.11.2025","desc":"MARMELADNAYA MAMA","a":-649.6,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"01.11.2025","desc":"STARS COFFEE","a":-525,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"01.11.2025","desc":"Пополнение СБП","a":1860,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"01.11.2025","desc":"Mos.Transport","a":-74,"t":"Расход","c":"Транспорт","m":"11.2025"},
+{"d":"02.11.2025","desc":"Пополнение СБП","a":1100,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"02.11.2025","desc":"AVTOMOYKA","a":-200,"t":"Расход","c":"Мойка автомобиля","m":"11.2025"},
+{"d":"02.11.2025","desc":"GAZPROMNEFT","a":-1176.2,"t":"Расход","c":"Топливо","m":"11.2025"},
+{"d":"02.11.2025","desc":"QSR ресторан","a":-410,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"02.11.2025","desc":"AKSOM услуги","a":-1850,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"02.11.2025","desc":"VV_7103 прочее","a":-263,"t":"Расход","c":"Прочие расходы","m":"11.2025"},
+{"d":"02.11.2025","desc":"IP Emelyanov услуги","a":-50,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"02.11.2025","desc":"Внешний перевод","a":-900,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"03.11.2025","desc":"Внутрибанк перевод","a":7447,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"03.11.2025","desc":"GAZPROMNEFT","a":-558,"t":"Расход","c":"Топливо","m":"11.2025"},
+{"d":"03.11.2025","desc":"Внешний перевод","a":-1359,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"03.11.2025","desc":"MAGNIT MM","a":-1502.98,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"03.11.2025","desc":"VERNYJ","a":-1181.66,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"03.11.2025","desc":"Пополнение СБП","a":1400,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"03.11.2025","desc":"Кэшбэк","a":1204,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"04.11.2025","desc":"Пополнение СБП","a":4000,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"04.11.2025","desc":"KAFE BOHO","a":-230,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"04.11.2025","desc":"Avito","a":-369,"t":"Расход","c":"Интернет-покупки","m":"11.2025"},
+{"d":"04.11.2025","desc":"Внутрибанк перевод","a":7013,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"04.11.2025","desc":"NEW RIGA VILLAGE","a":-3000,"t":"Расход","c":"Развлечения","m":"11.2025"},
+{"d":"04.11.2025","desc":"AVTOMOIKA","a":-160,"t":"Расход","c":"Мойка автомобиля","m":"11.2025"},
+{"d":"04.11.2025","desc":"Внешний перевод","a":-3600,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"04.11.2025","desc":"Внешний банк перевод","a":-2443.5,"t":"Расход","c":"Банковские переводы","m":"11.2025"},
+{"d":"05.11.2025","desc":"Пополнение СБП","a":90002.83,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"05.11.2025","desc":"МосОблЕИРЦ","a":-11092.74,"t":"Расход","c":"Коммуналка","m":"11.2025"},
+{"d":"05.11.2025","desc":"Кэшбэк СБП","a":332.78,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"05.11.2025","desc":"САО ВСК страховка","a":-22736.74,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"05.11.2025","desc":"Внешний перевод","a":-3690,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"05.11.2025","desc":"Avito возврат","a":369,"t":"Доход","c":"Интернет-покупки","m":"11.2025"},
+{"d":"05.11.2025","desc":"Внутренний перевод","a":-8000,"t":"Расход","c":"Внутренние переводы","m":"11.2025"},
+{"d":"05.11.2025","desc":"Пополнение СБП","a":4000,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"05.11.2025","desc":"IP SPIRINA услуги","a":-3290,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"05.11.2025","desc":"MYATA LOUNGE","a":-2570,"t":"Расход","c":"Развлечения","m":"11.2025"},
+{"d":"05.11.2025","desc":"EDELVEYS","a":-2745,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"06.11.2025","desc":"Пополнение СБП","a":3200,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"06.11.2025","desc":"Any2text подписка","a":-50,"t":"Расход","c":"Подписки","m":"11.2025"},
+{"d":"06.11.2025","desc":"VV_4528 продукты","a":-1372,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"06.11.2025","desc":"csat прочее","a":-3410,"t":"Расход","c":"Прочие расходы","m":"11.2025"},
+{"d":"06.11.2025","desc":"Batutnyy tsentr Leto","a":-1200,"t":"Расход","c":"Развлечения","m":"11.2025"},
+{"d":"06.11.2025","desc":"KIOTO ресторан","a":-3895,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"07.11.2025","desc":"Пополнение СБП","a":1700,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"07.11.2025","desc":"VV_7103 прочее","a":-598,"t":"Расход","c":"Прочие расходы","m":"11.2025"},
+{"d":"07.11.2025","desc":"MAGNIT MM","a":-1207.92,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"08.11.2025","desc":"QSR ресторан","a":-873,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"08.11.2025","desc":"Пополнение СБП","a":400,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"08.11.2025","desc":"ROSNEFT","a":-2000.1,"t":"Расход","c":"Топливо","m":"11.2025"},
+{"d":"08.11.2025","desc":"APTECHNYJ PUNKT аптека","a":-173,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"08.11.2025","desc":"Внешний перевод","a":-2250,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"09.11.2025","desc":"istranetmarket","a":-500,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"09.11.2025","desc":"Библейский центр","a":-500,"t":"Расход","c":"Пожертвования","m":"11.2025"},
+{"d":"09.11.2025","desc":"Внешний перевод","a":-2409,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"09.11.2025","desc":"VKUSVILL","a":-406,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"10.11.2025","desc":"Пополнение СБП","a":1700,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"10.11.2025","desc":"Внешний перевод","a":-4215,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"10.11.2025","desc":"Внутренний перевод","a":-1000,"t":"Расход","c":"Внутренние переводы","m":"11.2025"},
+{"d":"10.11.2025","desc":"AVTOMOYKA","a":-250,"t":"Расход","c":"Мойка автомобиля","m":"11.2025"},
+{"d":"11.11.2025","desc":"Внутрибанк перевод","a":1400,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"11.11.2025","desc":"PYATEROCHKA","a":-1625.63,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"11.11.2025","desc":"Внешний перевод","a":-1000,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"12.11.2025","desc":"Пополнение СБП","a":120738.49,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"12.11.2025","desc":"Внутренний перевод","a":-100000,"t":"Расход","c":"Внутренние переводы","m":"11.2025"},
+{"d":"12.11.2025","desc":"Внешний перевод","a":-21500,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"12.11.2025","desc":"Внутрибанк перевод","a":17000,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"12.11.2025","desc":"ROSNEFT","a":-1999.66,"t":"Расход","c":"Топливо","m":"11.2025"},
+{"d":"13.11.2025","desc":"YANDEX PLUS подписка","a":-399,"t":"Расход","c":"Подписки","m":"11.2025"},
+{"d":"13.11.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"11.2025"},
+{"d":"13.11.2025","desc":"Внутренний перевод","a":-350,"t":"Расход","c":"Внутренние переводы","m":"11.2025"},
+{"d":"13.11.2025","desc":"TOM YAM","a":-620,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"13.11.2025","desc":"T-Bank подписка","a":-199,"t":"Расход","c":"Подписки","m":"11.2025"},
+{"d":"13.11.2025","desc":"KOSMOS KITCHEN","a":-895,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"13.11.2025","desc":"YANDEX DK подписка","a":-782,"t":"Расход","c":"Подписки","m":"11.2025"},
+{"d":"14.11.2025","desc":"Внешний банк перевод","a":-1125,"t":"Расход","c":"Банковские переводы","m":"11.2025"},
+{"d":"14.11.2025","desc":"SC I-COM услуги","a":-4000,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"14.11.2025","desc":"OnliPay услуги","a":-500,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"14.11.2025","desc":"Mos.Transport","a":-74,"t":"Расход","c":"Транспорт","m":"11.2025"},
+{"d":"14.11.2025","desc":"TOM YAM","a":-830,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"14.11.2025","desc":"KOSMOS KITCHEN","a":-400,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"14.11.2025","desc":"TOMIOMI","a":-490,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"14.11.2025","desc":"SPAR продукты","a":-44.9,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"14.11.2025","desc":"Внешний перевод","a":-300,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"14.11.2025","desc":"Zola Lounge","a":-2300,"t":"Расход","c":"Развлечения","m":"11.2025"},
+{"d":"15.11.2025","desc":"Mos.Transport","a":-74,"t":"Расход","c":"Транспорт","m":"11.2025"},
+{"d":"15.11.2025","desc":"Внутрибанк перевод","a":10000,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"15.11.2025","desc":"Внешний перевод","a":-800,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"15.11.2025","desc":"CHITAJ-GOROD","a":-299,"t":"Расход","c":"Интернет-покупки","m":"11.2025"},
+{"d":"15.11.2025","desc":"official-rus одежда","a":-3490,"t":"Расход","c":"Интернет-покупки","m":"11.2025"},
+{"d":"15.11.2025","desc":"Внешний перевод","a":-2566,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"16.11.2025","desc":"Внешний перевод","a":-2600,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"16.11.2025","desc":"Пополнение СБП","a":1300,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"16.11.2025","desc":"ROSNEFT","a":-1499.62,"t":"Расход","c":"Топливо","m":"11.2025"},
+{"d":"16.11.2025","desc":"VKUSNOITOCHKA","a":-455,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"16.11.2025","desc":"11015 MOP SBP","a":-372,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"17.11.2025","desc":"Внутрибанк перевод","a":582,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"17.11.2025","desc":"TOK3 доставка","a":-1508.23,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"18.11.2025","desc":"Внутрибанк перевод","a":92,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"18.11.2025","desc":"VKUSVILL","a":-224,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"20.11.2025","desc":"Пополнение СБП","a":82671.84,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"20.11.2025","desc":"Внешний перевод","a":-10000,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"20.11.2025","desc":"Внешний банк перевод","a":-3000,"t":"Расход","c":"Банковские переводы","m":"11.2025"},
+{"d":"20.11.2025","desc":"Внутренний перевод","a":-20000,"t":"Расход","c":"Внутренние переводы","m":"11.2025"},
+{"d":"20.11.2025","desc":"OZON","a":-3832,"t":"Расход","c":"Интернет-покупки","m":"11.2025"},
+{"d":"20.11.2025","desc":"Внешний перевод","a":-12000,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"20.11.2025","desc":"KIOTO ресторан","a":-870,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"20.11.2025","desc":"TOK3 доставка","a":-1876.86,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"21.11.2025","desc":"FUNDAY одежда","a":-499,"t":"Расход","c":"Одежда","m":"11.2025"},
+{"d":"21.11.2025","desc":"Пополнение СБП","a":20000,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"21.11.2025","desc":"Внутренний перевод","a":-20000,"t":"Расход","c":"Внутренние переводы","m":"11.2025"},
+{"d":"21.11.2025","desc":"Внешний перевод","a":-2352,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"22.11.2025","desc":"LAGUNA LOUNGE","a":-2950,"t":"Расход","c":"Развлечения","m":"11.2025"},
+{"d":"22.11.2025","desc":"Пополнение СБП","a":3850,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"22.11.2025","desc":"Внешний перевод","a":-2150,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"22.11.2025","desc":"AVTOMOYKA","a":-250,"t":"Расход","c":"Мойка автомобиля","m":"11.2025"},
+{"d":"22.11.2025","desc":"APTECHNYJ PUNKT аптека","a":-935,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"22.11.2025","desc":"Внешний перевод","a":-750,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"23.11.2025","desc":"YANDEX DK подписка","a":-1433,"t":"Расход","c":"Подписки","m":"11.2025"},
+{"d":"23.11.2025","desc":"Пополнение СБП","a":500,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"23.11.2025","desc":"NALOG.RU налоги","a":-911,"t":"Расход","c":"Налоги","m":"11.2025"},
+{"d":"23.11.2025","desc":"Библейский центр","a":-1000,"t":"Расход","c":"Пожертвования","m":"11.2025"},
+{"d":"23.11.2025","desc":"Пополнение СБП","a":2200,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"23.11.2025","desc":"KIOTO ресторан","a":-5129,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"24.11.2025","desc":"Пополнение СБП","a":8400,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"24.11.2025","desc":"MAGAZIN продукты","a":-4157,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"24.11.2025","desc":"LENTA","a":-6224.38,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"25.11.2025","desc":"Внутрибанк перевод","a":2009,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"25.11.2025","desc":"REST TSVETNOY","a":-388,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"25.11.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"11.2025"},
+{"d":"25.11.2025","desc":"Grillnchill","a":-700,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"25.11.2025","desc":"TOM YAM","a":-830,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"25.11.2025","desc":"KOSMOS KITCHEN","a":-330,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"25.11.2025","desc":"SNEDI FEDI","a":-170,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"25.11.2025","desc":"Внешний перевод","a":-900,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"26.11.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"11.2025"},
+{"d":"26.11.2025","desc":"KHOANG TKHAN KHAJ","a":-680,"t":"Расход","c":"Кафе и рестораны","m":"11.2025"},
+{"d":"26.11.2025","desc":"VKUSVILL","a":-336,"t":"Расход","c":"Продукты","m":"11.2025"},
+{"d":"27.11.2025","desc":"Внутрибанк перевод","a":6394,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"27.11.2025","desc":"BYURO PEREVODOV","a":-5300,"t":"Расход","c":"Услуги","m":"11.2025"},
+{"d":"27.11.2025","desc":"Внешний перевод","a":-2000,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"28.11.2025","desc":"АЗС топливо","a":-1000,"t":"Расход","c":"Топливо","m":"11.2025"},
+{"d":"28.11.2025","desc":"Apple подписка","a":-193.04,"t":"Расход","c":"Подписки","m":"11.2025"},
+{"d":"28.11.2025","desc":"Внутренний перевод","a":-5350,"t":"Расход","c":"Внутренние переводы","m":"11.2025"},
+{"d":"28.11.2025","desc":"Внутрибанк перевод","a":10000,"t":"Доход","c":"Доходы","m":"11.2025"},
+{"d":"28.11.2025","desc":"Внешний перевод","a":-1400,"t":"Расход","c":"Переводы","m":"11.2025"},
+{"d":"28.11.2025","desc":"KULIKOVA одежда","a":-495,"t":"Расход","c":"Одежда","m":"11.2025"},
+{"d":"03.12.2025","desc":"Кэшбэк","a":1996,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"03.12.2025","desc":"DIXY","a":-205.87,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"04.12.2025","desc":"KOSMOS KITCHEN","a":-165,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"04.12.2025","desc":"TOM YAM","a":-850,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"05.12.2025","desc":"TABAK 24","a":-380,"t":"Расход","c":"Прочие расходы","m":"12.2025"},
+{"d":"05.12.2025","desc":"OOO SOYUZ услуги","a":-2610.06,"t":"Расход","c":"Услуги","m":"12.2025"},
+{"d":"05.12.2025","desc":"FUNDAY одежда","a":-799,"t":"Расход","c":"Одежда","m":"12.2025"},
+{"d":"05.12.2025","desc":"МосОблЕИРЦ","a":-9698.86,"t":"Расход","c":"Коммуналка","m":"12.2025"},
+{"d":"05.12.2025","desc":"Внешний перевод","a":-26000,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"05.12.2025","desc":"МосЭнергоСбыт","a":-3052.5,"t":"Расход","c":"Коммуналка","m":"12.2025"},
+{"d":"05.12.2025","desc":"Внешний банк перевод","a":-1881,"t":"Расход","c":"Банковские переводы","m":"12.2025"},
+{"d":"05.12.2025","desc":"Внутренний перевод","a":-46000,"t":"Расход","c":"Внутренние переводы","m":"12.2025"},
+{"d":"05.12.2025","desc":"Пополнение СБП","a":118977.21,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"05.12.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"12.2025"},
+{"d":"05.12.2025","desc":"АЗС топливо","a":-1500,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"06.12.2025","desc":"KULIKOVA одежда","a":-950,"t":"Расход","c":"Одежда","m":"12.2025"},
+{"d":"06.12.2025","desc":"Внешний перевод","a":-3000,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"06.12.2025","desc":"MAGNIT MM","a":-59.99,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"06.12.2025","desc":"Пополнение СБП","a":4000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"06.12.2025","desc":"Внутрибанк перевод","a":1000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"07.12.2025","desc":"PYATEROCHKA","a":-144.97,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"07.12.2025","desc":"OZON","a":-2418,"t":"Расход","c":"Интернет-покупки","m":"12.2025"},
+{"d":"07.12.2025","desc":"MAGNIT MM","a":-630.92,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"07.12.2025","desc":"csat прочее","a":-3410,"t":"Расход","c":"Прочие расходы","m":"12.2025"},
+{"d":"08.12.2025","desc":"Пополнение СБП","a":10000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"08.12.2025","desc":"Внешний перевод","a":-13600,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"08.12.2025","desc":"MAGAZIN","a":-170,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"08.12.2025","desc":"Внешний перевод","a":-2700,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"08.12.2025","desc":"LEMANAPROGPB","a":-1778,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"08.12.2025","desc":"MAGNIT MM","a":-279.97,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"08.12.2025","desc":"Пополнение сервис","a":2521,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"08.12.2025","desc":"GAZPROMNEFT","a":-2000.32,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"09.12.2025","desc":"KIOTO ресторан","a":-2556.95,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"09.12.2025","desc":"Пополнение СБП","a":500,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"09.12.2025","desc":"MAGNIT MM","a":-218.96,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"09.12.2025","desc":"Внешний перевод","a":-2300,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"09.12.2025","desc":"Содружество церквей","a":-1000,"t":"Расход","c":"Пожертвования","m":"12.2025"},
+{"d":"09.12.2025","desc":"OZON","a":-871,"t":"Расход","c":"Интернет-покупки","m":"12.2025"},
+{"d":"09.12.2025","desc":"AVTOMOIKA","a":-260,"t":"Расход","c":"Мойка автомобиля","m":"12.2025"},
+{"d":"10.12.2025","desc":"Внутрибанк перевод","a":727,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"10.12.2025","desc":"KOSMOS KITCHEN","a":-985,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"10.12.2025","desc":"TOM YAM","a":-850,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"10.12.2025","desc":"Grillnchill","a":-600,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"10.12.2025","desc":"УФК возврат","a":1822,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"10.12.2025","desc":"Пополнение СБП","a":500,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"11.12.2025","desc":"Пополнение СБП","a":950,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"11.12.2025","desc":"QSR ресторан","a":-1947,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"11.12.2025","desc":"Mos.Transport","a":-148,"t":"Расход","c":"Транспорт","m":"12.2025"},
+{"d":"11.12.2025","desc":"GAZPROMNEFT","a":-1778.91,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"12.12.2025","desc":"OSSP M11","a":-570,"t":"Расход","c":"Транспорт","m":"12.2025"},
+{"d":"12.12.2025","desc":"Внутрибанк перевод","a":10334,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"12.12.2025","desc":"AVTOMOIKA","a":-150,"t":"Расход","c":"Мойка автомобиля","m":"12.2025"},
+{"d":"12.12.2025","desc":"OZON","a":-405,"t":"Расход","c":"Интернет-покупки","m":"12.2025"},
+{"d":"12.12.2025","desc":"TOK3 доставка","a":-1827.79,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"12.12.2025","desc":"Атак","a":-297.93,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"13.12.2025","desc":"MAGNIT MM","a":-271.97,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"13.12.2025","desc":"KULIKOVA одежда","a":-845,"t":"Расход","c":"Одежда","m":"12.2025"},
+{"d":"13.12.2025","desc":"Фитнес КРОЛИК","a":-960,"t":"Расход","c":"Прочие расходы","m":"12.2025"},
+{"d":"13.12.2025","desc":"LEMANAPROGPB","a":-1156,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"13.12.2025","desc":"T-Bank подписка","a":-199,"t":"Расход","c":"Подписки","m":"12.2025"},
+{"d":"13.12.2025","desc":"YANDEX PLUS подписка","a":-449,"t":"Расход","c":"Подписки","m":"12.2025"},
+{"d":"13.12.2025","desc":"Пополнение СБП","a":2100,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"13.12.2025","desc":"BIR KHAUS","a":-4200,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"13.12.2025","desc":"ROSNEFT","a":-1614.98,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"14.12.2025","desc":"AVTOMOIKA","a":-260,"t":"Расход","c":"Мойка автомобиля","m":"12.2025"},
+{"d":"14.12.2025","desc":"YARCHE кафе","a":-375.94,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"14.12.2025","desc":"Пополнение СБП","a":800,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"14.12.2025","desc":"Внутрибанк перевод","a":548,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"14.12.2025","desc":"Webverta услуги","a":-150,"t":"Расход","c":"Услуги","m":"12.2025"},
+{"d":"15.12.2025","desc":"Сервисы Яндекса","a":-380,"t":"Расход","c":"Подписки","m":"12.2025"},
+{"d":"15.12.2025","desc":"ATAK","a":-193.94,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"15.12.2025","desc":"BURGER KING","a":-519.98,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"15.12.2025","desc":"Пополнение СБП","a":10000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"16.12.2025","desc":"ATAK","a":-570.93,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"16.12.2025","desc":"Внутренний перевод","a":-20000,"t":"Расход","c":"Внутренние переводы","m":"12.2025"},
+{"d":"16.12.2025","desc":"Пополнение СБП","a":23000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"16.12.2025","desc":"PYATEROCHKA","a":-319.97,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"16.12.2025","desc":"TOK3 доставка","a":-458.06,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"16.12.2025","desc":"Внутрибанк перевод","a":426,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"16.12.2025","desc":"Пополнение Сбербанк","a":3400,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"16.12.2025","desc":"ОнлиПэй услуги","a":-321,"t":"Расход","c":"Услуги","m":"12.2025"},
+{"d":"16.12.2025","desc":"MAGNIT MM","a":-3418.81,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"16.12.2025","desc":"GAZPROMNEFT","a":-3904.14,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"17.12.2025","desc":"Внутрибанк перевод","a":350,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"17.12.2025","desc":"Grillnchill","a":-700,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"17.12.2025","desc":"TOM YAM","a":-850,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"18.12.2025","desc":"Внутрибанк перевод","a":300,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"18.12.2025","desc":"KOSMOS KITCHEN","a":-1060,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"18.12.2025","desc":"TOM YAM","a":-850,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"18.12.2025","desc":"Mos.Transport","a":-74,"t":"Расход","c":"Транспорт","m":"12.2025"},
+{"d":"19.12.2025","desc":"МосЭнергоСбыт","a":-2780.25,"t":"Расход","c":"Коммуналка","m":"12.2025"},
+{"d":"19.12.2025","desc":"Внутренний перевод","a":-51000,"t":"Расход","c":"Внутренние переводы","m":"12.2025"},
+{"d":"19.12.2025","desc":"Пополнение СБП","a":85264,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"19.12.2025","desc":"REST ROZHDESTVENKA","a":-1259,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"19.12.2025","desc":"Внешний перевод","a":-250,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"19.12.2025","desc":"Внутренний перевод","a":-1000,"t":"Расход","c":"Внутренние переводы","m":"12.2025"},
+{"d":"19.12.2025","desc":"Mos.Transport","a":-74,"t":"Расход","c":"Транспорт","m":"12.2025"},
+{"d":"20.12.2025","desc":"VKUS INDII","a":-240,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"20.12.2025","desc":"UDON NOODLE BAR","a":-580,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"20.12.2025","desc":"Внешний перевод","a":-600,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"20.12.2025","desc":"Кофейня Torrefacto","a":-150,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"20.12.2025","desc":"TOM YAM","a":-850,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"20.12.2025","desc":"KOFEJNYA DABLBI","a":-870,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"20.12.2025","desc":"T-Bank подписка","a":-2990,"t":"Расход","c":"Подписки","m":"12.2025"},
+{"d":"20.12.2025","desc":"AVTOMOYKA","a":-600,"t":"Расход","c":"Мойка автомобиля","m":"12.2025"},
+{"d":"20.12.2025","desc":"MAGNIT MM","a":-139.99,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"20.12.2025","desc":"Внешний перевод","a":-5500,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"20.12.2025","desc":"Mos.Transport","a":-222,"t":"Расход","c":"Транспорт","m":"12.2025"},
+{"d":"21.12.2025","desc":"MAGNIT MM","a":-600.91,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"21.12.2025","desc":"KULIKOVA одежда","a":-1060,"t":"Расход","c":"Одежда","m":"12.2025"},
+{"d":"21.12.2025","desc":"QSR ресторан","a":-424,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"21.12.2025","desc":"VKUSNOITOCHKA","a":-519,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"21.12.2025","desc":"Внешний перевод","a":-1500,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"21.12.2025","desc":"Mos.Transport","a":-222,"t":"Расход","c":"Транспорт","m":"12.2025"},
+{"d":"21.12.2025","desc":"EKSPRESS магазин","a":-110,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"21.12.2025","desc":"ROSNEFT","a":-1499.62,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"22.12.2025","desc":"Фитнес КРОЛИК","a":-150,"t":"Расход","c":"Прочие расходы","m":"12.2025"},
+{"d":"22.12.2025","desc":"Лента","a":-2908,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"22.12.2025","desc":"Внутрибанк перевод","a":11275,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"22.12.2025","desc":"OZON","a":-2027,"t":"Расход","c":"Интернет-покупки","m":"12.2025"},
+{"d":"22.12.2025","desc":"ОнлиПэй услуги","a":-299,"t":"Расход","c":"Услуги","m":"12.2025"},
+{"d":"22.12.2025","desc":"MOBBIWORKRU услуги","a":-399,"t":"Расход","c":"Услуги","m":"12.2025"},
+{"d":"23.12.2025","desc":"Внешний перевод","a":-4353,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"23.12.2025","desc":"Пополнение СБП","a":2400,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"23.12.2025","desc":"SBGG подписка","a":-2398,"t":"Расход","c":"Подписки","m":"12.2025"},
+{"d":"23.12.2025","desc":"OZON","a":-457,"t":"Расход","c":"Интернет-покупки","m":"12.2025"},
+{"d":"24.12.2025","desc":"Пополнение СБП","a":2000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"24.12.2025","desc":"Внутрибанк перевод","a":726,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"24.12.2025","desc":"TOK3 доставка","a":-948.52,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"25.12.2025","desc":"Внешний перевод","a":-25370,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"25.12.2025","desc":"ATAK","a":-253.98,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"25.12.2025","desc":"Внесение наличных","a":11000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"25.12.2025","desc":"Пополнение СБП","a":4500,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"25.12.2025","desc":"Внутренний перевод","a":-1000,"t":"Расход","c":"Внутренние переводы","m":"12.2025"},
+{"d":"25.12.2025","desc":"GAZPROMNEFT","a":-2012.61,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"26.12.2025","desc":"Внутрибанк перевод","a":4000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"26.12.2025","desc":"MOBBIWORKRU услуги","a":-200,"t":"Расход","c":"Услуги","m":"12.2025"},
+{"d":"26.12.2025","desc":"AVTOMOIKA","a":-160,"t":"Расход","c":"Мойка автомобиля","m":"12.2025"},
+{"d":"26.12.2025","desc":"MAGNIT MM","a":-601.93,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"27.12.2025","desc":"yp_kleekstore","a":-820,"t":"Расход","c":"Интернет-покупки","m":"12.2025"},
+{"d":"27.12.2025","desc":"Пополнение СБП","a":1720,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"27.12.2025","desc":"Hippoparking","a":-100,"t":"Расход","c":"Транспорт","m":"12.2025"},
+{"d":"27.12.2025","desc":"SPAR","a":-124.9,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"27.12.2025","desc":"OOO FESTA ресторан","a":-2589,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"27.12.2025","desc":"ROSNEFT","a":-1294.1,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"28.12.2025","desc":"MAGNIT MM","a":-1364.87,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"30.12.2025","desc":"MAGNIT MM","a":-529.97,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"30.12.2025","desc":"LENTA","a":-3495.62,"t":"Расход","c":"Продукты","m":"12.2025"},
+{"d":"30.12.2025","desc":"OZON","a":-1168,"t":"Расход","c":"Интернет-покупки","m":"12.2025"},
+{"d":"30.12.2025","desc":"Внутрибанк перевод","a":147,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"30.12.2025","desc":"Внутренний перевод","a":-43000,"t":"Расход","c":"Внутренние переводы","m":"12.2025"},
+{"d":"30.12.2025","desc":"Внешний перевод","a":-14184.5,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"30.12.2025","desc":"Пополнение СБП","a":86700,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"30.12.2025","desc":"QSR ресторан","a":-1207,"t":"Расход","c":"Кафе и рестораны","m":"12.2025"},
+{"d":"30.12.2025","desc":"Внутрибанк перевод","a":1500,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"31.12.2025","desc":"VV_7103 прочее","a":-785,"t":"Расход","c":"Прочие расходы","m":"12.2025"},
+{"d":"31.12.2025","desc":"Внесение наличных","a":2000,"t":"Доход","c":"Доходы","m":"12.2025"},
+{"d":"31.12.2025","desc":"Внешний перевод","a":-1000,"t":"Расход","c":"Переводы","m":"12.2025"},
+{"d":"31.12.2025","desc":"ROSNEFT","a":-4140.11,"t":"Расход","c":"Топливо","m":"12.2025"},
+{"d":"01.01.2026","desc":"OSSP M11","a":-900,"t":"Расход","c":"Транспорт","m":"01.2026"},
+{"d":"01.01.2026","desc":"Пополнение СБП","a":1900,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"01.01.2026","desc":"TERMY развлечения","a":-11180,"t":"Расход","c":"Развлечения","m":"01.2026"},
+{"d":"01.01.2026","desc":"AVTODOR-PLAT","a":-730,"t":"Расход","c":"Транспорт","m":"01.2026"},
+{"d":"01.01.2026","desc":"МегаФон","a":-400,"t":"Расход","c":"Связь","m":"01.2026"},
+{"d":"01.01.2026","desc":"GAZPROMNEFT","a":-1315,"t":"Расход","c":"Топливо","m":"01.2026"},
+{"d":"02.01.2026","desc":"K3443 прочее","a":-67,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"02.01.2026","desc":"NULL прочее","a":-660,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"02.01.2026","desc":"KHOANG TKHAN KHAJ","a":-570,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"02.01.2026","desc":"Внутрибанк перевод","a":23000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"02.01.2026","desc":"Пополнение СБП","a":2000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"03.01.2026","desc":"MAGNIT MM","a":-419.55,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"03.01.2026","desc":"Внешний банк перевод","a":-562.5,"t":"Расход","c":"Банковские переводы","m":"01.2026"},
+{"d":"04.01.2026","desc":"APTECHNYJ PUNKT аптека","a":-269,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"04.01.2026","desc":"YM Avito","a":-584,"t":"Расход","c":"Интернет-покупки","m":"01.2026"},
+{"d":"04.01.2026","desc":"Библейский центр","a":-500,"t":"Расход","c":"Пожертвования","m":"01.2026"},
+{"d":"04.01.2026","desc":"MAGNIT MM","a":-486.92,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"05.01.2026","desc":"LEMANAPROGPB","a":-1908,"t":"Расход","c":"Топливо","m":"01.2026"},
+{"d":"05.01.2026","desc":"Пополнение СБП","a":6002,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"05.01.2026","desc":"Внешний перевод","a":-8000,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"05.01.2026","desc":"Внутрибанк перевод","a":1000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"06.01.2026","desc":"AV MARKET","a":-1166,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"06.01.2026","desc":"KINOMAKS кино","a":-595,"t":"Расход","c":"Развлечения","m":"01.2026"},
+{"d":"06.01.2026","desc":"AVTOMOIKA","a":-250,"t":"Расход","c":"Мойка автомобиля","m":"01.2026"},
+{"d":"06.01.2026","desc":"GAZPROMNEFT","a":-1571.06,"t":"Расход","c":"Топливо","m":"01.2026"},
+{"d":"07.01.2026","desc":"Магнит","a":-299.97,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"07.01.2026","desc":"Атак","a":-1475.92,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"07.01.2026","desc":"ИП Тимофейчева","a":-400,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"07.01.2026","desc":"IGROMAGAZ.RU","a":-318,"t":"Расход","c":"Интернет-покупки","m":"01.2026"},
+{"d":"08.01.2026","desc":"Магнит","a":-224.98,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"08.01.2026","desc":"IGROMAGAZ.RU","a":-318,"t":"Расход","c":"Интернет-покупки","m":"01.2026"},
+{"d":"08.01.2026","desc":"globalsteamgames","a":-216,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"08.01.2026","desc":"allforgamers","a":-324,"t":"Расход","c":"Интернет-покупки","m":"01.2026"},
+{"d":"08.01.2026","desc":"MAGNIT MM","a":-134.99,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"09.01.2026","desc":"Внешний перевод","a":-4600,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"09.01.2026","desc":"Внутрибанк перевод","a":10000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"09.01.2026","desc":"TOK3 доставка","a":-1924.54,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"09.01.2026","desc":"YANDEX подписка","a":-641,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"09.01.2026","desc":"Внешний банк перевод","a":-562.5,"t":"Расход","c":"Банковские переводы","m":"01.2026"},
+{"d":"10.01.2026","desc":"AVTOMOYKA","a":-150,"t":"Расход","c":"Мойка автомобиля","m":"01.2026"},
+{"d":"10.01.2026","desc":"LENTA","a":-319.98,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"10.01.2026","desc":"LEMANAPRO прочее","a":-676,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"10.01.2026","desc":"istranetmarket","a":-701,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"10.01.2026","desc":"MKC прочее","a":-245,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"10.01.2026","desc":"Mos.Transport","a":-166,"t":"Расход","c":"Транспорт","m":"01.2026"},
+{"d":"10.01.2026","desc":"ROSNEFT","a":-1604.63,"t":"Расход","c":"Топливо","m":"01.2026"},
+{"d":"11.01.2026","desc":"MAGNIT MM","a":-1151.89,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"11.01.2026","desc":"Пополнение СБП","a":910,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"11.01.2026","desc":"mBank.Steam","a":-900,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"11.01.2026","desc":"Внутрибанк перевод","a":1122,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"11.01.2026","desc":"OOO ISTREST GRUPP","a":-950,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"11.01.2026","desc":"APTECHNYJ PUNKT","a":-298,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"12.01.2026","desc":"ATAK","a":-399.92,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"12.01.2026","desc":"vezdekarta","a":-2955,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"12.01.2026","desc":"Внутрибанк перевод","a":10364.55,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"12.01.2026","desc":"T-Bank подписка","a":-199,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"12.01.2026","desc":"OZON","a":-565,"t":"Расход","c":"Интернет-покупки","m":"01.2026"},
+{"d":"12.01.2026","desc":"YANDEX PLUS подписка","a":-449,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"12.01.2026","desc":"Fabrika vkusa","a":-2270,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"13.01.2026","desc":"Магнит","a":-209.97,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"13.01.2026","desc":"MAGNIT MM","a":-444.36,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"13.01.2026","desc":"Фитнес КРОЛИК","a":-170,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"13.01.2026","desc":"Внешний перевод","a":-200,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"13.01.2026","desc":"mBank.Steam","a":-100,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"14.01.2026","desc":"FIXPRICE","a":-232,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"14.01.2026","desc":"TOK3 доставка","a":-996.45,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"15.01.2026","desc":"Фитнес КРОЛИК","a":-170,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"15.01.2026","desc":"ОнлиПэй","a":-587,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"15.01.2026","desc":"Vkusvill","a":-199,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"16.01.2026","desc":"MAGNIT MM","a":-1106.52,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"16.01.2026","desc":"mBank.Steam","a":-650,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"16.01.2026","desc":"Внутрибанк перевод","a":241,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"17.01.2026","desc":"ROSNEFT","a":-1352.3,"t":"Расход","c":"Топливо","m":"01.2026"},
+{"d":"18.01.2026","desc":"MAGNIT MM","a":-897.62,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"18.01.2026","desc":"Внутрибанк перевод","a":287.48,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"18.01.2026","desc":"QSR ресторан","a":-436,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"18.01.2026","desc":"VKUSNOITOCHKA","a":-418,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"19.01.2026","desc":"ОнлиПэй","a":-587,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"19.01.2026","desc":"Внутрибанк перевод","a":600,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"20.01.2026","desc":"IP PREDIT B.V","a":-1680,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"20.01.2026","desc":"Внешний перевод","a":-2300,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"20.01.2026","desc":"Внешний банк перевод","a":-141081,"t":"Расход","c":"Банковские переводы","m":"01.2026"},
+{"d":"20.01.2026","desc":"Внутрибанк перевод","a":119587.1,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"20.01.2026","desc":"Пополнение СБП","a":46645.52,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"20.01.2026","desc":"Пополнение Сбербанк","a":19850,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"21.01.2026","desc":"Пополнение СБП","a":900,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"21.01.2026","desc":"OOO ISTREST GRUPP","a":-1750,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"21.01.2026","desc":"ОнлиПэй","a":-587,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"21.01.2026","desc":"nanobananaibot","a":-149,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"21.01.2026","desc":"ROSNEFT","a":-1604.96,"t":"Расход","c":"Топливо","m":"01.2026"},
+{"d":"22.01.2026","desc":"Внешний перевод","a":-9849,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"22.01.2026","desc":"mBank.Steam","a":-360,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"22.01.2026","desc":"Пополнение СБП","a":8400,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"22.01.2026","desc":"Внутрибанк перевод","a":239.04,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"22.01.2026","desc":"OOO ISTREST GRUPP","a":-1090,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"23.01.2026","desc":"TOK3 доставка","a":-1998.84,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"23.01.2026","desc":"MOBBIWORKRU","a":-200,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"23.01.2026","desc":"Внешний перевод","a":-300,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"24.01.2026","desc":"mBank.Steam","a":-750,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"24.01.2026","desc":"QSR ресторан","a":-1030,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"24.01.2026","desc":"Внутрибанк перевод","a":1000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"24.01.2026","desc":"Внешний перевод","a":-20000,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"24.01.2026","desc":"Пополнение СБП","a":20000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"24.01.2026","desc":"Пополнение Сбербанк","a":3903,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"24.01.2026","desc":"AVTOMOYKA","a":-400,"t":"Расход","c":"Мойка автомобиля","m":"01.2026"},
+{"d":"25.01.2026","desc":"mBank.Steam","a":-320,"t":"Расход","c":"Подписки","m":"01.2026"},
+{"d":"25.01.2026","desc":"Внешний перевод","a":-400,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"25.01.2026","desc":"OOO ISTREST GRUPP","a":-1900,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"25.01.2026","desc":"Внутрибанк перевод","a":1000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"25.01.2026","desc":"Пополнение СБП","a":500,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"26.01.2026","desc":"DOSTAVKA PEREKRESTKA","a":-1203.75,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"26.01.2026","desc":"TOK3 доставка","a":-792.94,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"27.01.2026","desc":"KIOTO ресторан","a":-925.3,"t":"Расход","c":"Кафе и рестораны","m":"01.2026"},
+{"d":"27.01.2026","desc":"Внутрибанк перевод","a":1207.19,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"27.01.2026","desc":"MAGNIT MM","a":-561.33,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"27.01.2026","desc":"Внешний перевод","a":-2100,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"27.01.2026","desc":"YM aerodynamika","a":-12900,"t":"Расход","c":"Развлечения","m":"01.2026"},
+{"d":"27.01.2026","desc":"Пополнение СБП","a":15000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"27.01.2026","desc":"KANCTOVARY","a":-300,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"27.01.2026","desc":"IP SHELENKOVA","a":-20,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"27.01.2026","desc":"VV_4528","a":-155,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"28.01.2026","desc":"TOK3 доставка","a":-1947.26,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"28.01.2026","desc":"Внешний перевод","a":-2000,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"28.01.2026","desc":"Пополнение СБП","a":2000,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"28.01.2026","desc":"ROSNEFT","a":-1499.96,"t":"Расход","c":"Топливо","m":"01.2026"},
+{"d":"29.01.2026","desc":"MAGNIT MM","a":-476.33,"t":"Расход","c":"Продукты","m":"01.2026"},
+{"d":"29.01.2026","desc":"HTV","a":-100,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"30.01.2026","desc":"KULIKOVA одежда","a":-600,"t":"Расход","c":"Одежда","m":"01.2026"},
+{"d":"30.01.2026","desc":"Пополнение СБП","a":1300,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"30.01.2026","desc":"Фитнес КРОЛИК","a":-170,"t":"Расход","c":"Прочие расходы","m":"01.2026"},
+{"d":"30.01.2026","desc":"Внешний перевод","a":-1300,"t":"Расход","c":"Переводы","m":"01.2026"},
+{"d":"30.01.2026","desc":"APTECHNYJ PUNKT","a":-779,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"30.01.2026","desc":"Внутрибанк перевод","a":151.11,"t":"Доход","c":"Доходы","m":"01.2026"},
+{"d":"31.01.2026","desc":"IP ALIFTENOVA","a":-604,"t":"Расход","c":"Услуги","m":"01.2026"},
+{"d":"31.01.2026","desc":"OOO PROFIT","a":-200,"t":"Расход","c":"Услуги","m":"01.2026"}
+];
+
+// ════════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════════════════════════════════
+const MONTHS = ['09.2025','10.2025','11.2025','12.2025','01.2026'];
+const ML = {'09.2025':'Сент 25','10.2025':'Окт 25','11.2025':'Нояб 25','12.2025':'Дек 25','01.2026':'Янв 26'};
+const SKIP = new Set(['Инвестиции','Переводы','Внутренние переводы','Банковские переводы']);
+const PAL = ['#6c5ce7','#e84d6f','#00c896','#ffb347','#4da6ff','#ff7b6b',
+             '#00b87a','#ffd166','#74b9ff','#fd79a8','#55efc4','#fdcb6e',
+             '#a29bfe','#81ecec','#fab1a0','#e17055'];
+const CC = {}; let ci = 0;
+function cc(c){if(!CC[c])CC[c]=PAL[ci++%PAL.length];return CC[c];}
+['Продукты','Кафе и рестораны','Топливо','Транспорт','Услуги','Развлечения',
+ 'Интернет-покупки','Подписки','Мойка автомобиля','Коммуналка','Прочие расходы',
+ 'Пожертвования','Одежда','Инвестиции','Переводы','Банковские переводы','Налоги','Связь']
+.forEach(c=>cc(c));
+
+// ════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+const fmt = n => Math.round(Math.abs(n)).toLocaleString('ru-RU') + ' ₽';
+const fmtK = n => { const v=Math.round(Math.abs(n)); return v>=10000?Math.round(v/1000)+'к':v>0?v.toLocaleString('ru-RU'):'—'; };
+const fmtKK = n => Math.round(Math.abs(n))>=1000 ? Math.round(Math.abs(n)/1000)+'к' : Math.round(Math.abs(n));
+
+function filter(m,cat='all',type='all',q=''){
+  return TX.filter(t=>{
+    if(m!=='all'&&t.m!==m)return false;
+    if(cat!=='all'&&t.c!==cat)return false;
+    if(type!=='all'&&t.t!==type)return false;
+    if(q&&!t.desc.toLowerCase().includes(q.toLowerCase())&&!t.c.toLowerCase().includes(q.toLowerCase()))return false;
+    return true;
+  });
+}
+function catTotals(txs,skip=true){
+  const m={};
+  txs.forEach(t=>{
+    if(t.t!=='Расход')return;
+    if(skip&&SKIP.has(t.c))return;
+    m[t.c]=(m[t.c]||0)+Math.abs(t.a);
+  });
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+}
+function mTotal(mo,cat,type='Расход'){
+  return TX.filter(t=>t.m===mo&&t.c===cat&&t.t===type).reduce((s,t)=>s+Math.abs(t.a),0);
+}
+function mSum(mo,type){
+  return TX.filter(t=>t.m===mo&&t.t===type).reduce((s,t)=>s+Math.abs(t.a),0);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════════════
+let AM = 'all', txP = 0;
+const PS = 25;
+const CH = {};
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOCK
+// ════════════════════════════════════════════════════════════════════════════
+function unlock(){
+  const v = document.getElementById('pwd').value;
+  if(v === PASSWORD){
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.display='flex';
+    init();
+  } else {
+    document.getElementById('perr').textContent='Неверный пароль';
+    document.getElementById('pwd').value='';
+    document.getElementById('pwd').focus();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════════════
+function init(){
+  document.getElementById('hmeta').innerHTML = TX.length+' транзакций<br>'+MONTHS[0].replace('.','/20')+' — '+MONTHS[MONTHS.length-1].replace('.','/20');
+
+  const mr = document.getElementById('month-row');
+  mr.innerHTML = '<button class="mpill on" onclick="setM(\'all\',this)">Все</button>';
+  MONTHS.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='mpill';
+    b.textContent=ML[m];
+    b.onclick=function(){setM(m,this);};
+    mr.appendChild(b);
+  });
+
+  const ts=document.getElementById('tm');
+  MONTHS.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=ML[m];ts.appendChild(o);});
+  const tc=document.getElementById('tc');
+  [...new Set(TX.map(t=>t.c))].sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;tc.appendChild(o);});
+
+  renderOverview();
+}
+
+function setM(m,btn){
+  AM=m;
+  document.querySelectorAll('.mpill').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const pg=document.querySelector('.page.on');
+  if(pg){'p-overview p-insights p-categories p-monthly'.split(' ').forEach(id=>{if(document.getElementById(id)===pg)eval('render'+id.replace('p-','').replace(/\b\w/g,c=>c.toUpperCase())()+'()');});;}
+  renderActive();
+}
+function renderActive(){
+  const pg=document.querySelector('.page.on');
+  if(!pg)return;
+  const id=pg.id;
+  if(id==='p-overview')renderOverview();
+  if(id==='p-insights')renderInsights();
+  if(id==='p-categories')renderCategories();
+  if(id==='p-monthly')renderMonthly();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════════════════════════
+function nav(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  btn.classList.add('on');
+  if(id==='overview')renderOverview();
+  if(id==='insights')renderInsights();
+  if(id==='categories')renderCategories();
+  if(id==='monthly')renderMonthly();
+  if(id==='tx')renderTx();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════════════════════════════════════════
+function renderOverview(){
+  const txs=filter(AM);
+  const inc=txs.filter(t=>t.t==='Доход').reduce((s,t)=>s+t.a,0);
+  const exp=txs.filter(t=>t.t==='Расход').reduce((s,t)=>s+Math.abs(t.a),0);
+  const real=txs.filter(t=>t.t==='Расход'&&!SKIP.has(t.c)).reduce((s,t)=>s+Math.abs(t.a),0);
+  const bal=inc-exp;
+  document.getElementById('ov-m').innerHTML=`
+    <div class="mc cg"><div class="mc-label">Доходы</div><div class="mc-val g">${fmt(inc)}</div><div class="mc-sub">${txs.filter(t=>t.t==='Доход').length} операций</div></div>
+    <div class="mc cr"><div class="mc-label">Реальные расходы</div><div class="mc-val r">${fmt(real)}</div><div class="mc-sub">без переводов</div></div>
+    <div class="mc ca"><div class="mc-label">Все расходы</div><div class="mc-val a">${fmt(exp)}</div><div class="mc-sub">${txs.filter(t=>t.t==='Расход').length} операций</div></div>
+    <div class="mc cb"><div class="mc-label">Баланс</div><div class="mc-val ${bal>=0?'g':'r'}">${bal>=0?'+':'-'}${fmt(Math.abs(bal))}</div><div class="mc-sub">${bal>=0?'профицит':'дефицит'}</div></div>`;
+
+  const cats=catTotals(txs);
+  const mx=cats[0]?cats[0][1]:1;
+  document.getElementById('ov-bars').innerHTML=cats.slice(0,10).map(([c,v])=>`
+    <div class="brow">
+      <div class="blabel">${c}</div>
+      <div class="btrack"><div class="bfill" style="width:${Math.round(v/mx*100)}%;background:${cc(c)}"></div></div>
+      <div class="bamt">${fmt(v)}</div>
+    </div>`).join('');
+
+  const top8=cats.slice(0,8);
+  const tot8=top8.reduce((s,[,v])=>s+v,0);
+  document.getElementById('donut-lbl').textContent=fmt(tot8);
+  if(CH.d){CH.d.destroy();}
+  CH.d=new Chart(document.getElementById('c-donut'),{
+    type:'doughnut',
+    data:{labels:top8.map(c=>c[0]),datasets:[{data:top8.map(c=>Math.round(c[1])),backgroundColor:top8.map(c=>cc(c[0])),borderWidth:2,borderColor:'#131318',hoverBorderColor:'#131318'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt(c.raw)}}}}
+  });
+  document.getElementById('dleg').innerHTML=top8.map(([c,v])=>`
+    <div class="dleg-row"><div class="dleg-dot" style="background:${cc(c)}"></div><div class="dleg-name">${c}</div><div class="dleg-amt">${fmt(v)}</div><div class="dleg-pct">${Math.round(v/tot8*100)}%</div></div>`).join('');
+
+  const mI=MONTHS.map(m=>Math.round(mSum(m,'Доход')));
+  const mE=MONTHS.map(m=>Math.round(mSum(m,'Расход')));
+  if(CH.mb){CH.mb.destroy();}
+  CH.mb=new Chart(document.getElementById('c-mbar'),{
+    type:'bar',
+    data:{labels:MONTHS.map(m=>ML[m]),datasets:[
+      {label:'Доходы',data:mI,backgroundColor:'#00c89655',borderColor:'#00c896',borderWidth:1.5,borderRadius:5},
+      {label:'Расходы',data:mE,backgroundColor:'#e84d6f55',borderColor:'#e84d6f',borderWidth:1.5,borderRadius:5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{x:{grid:{color:'#ffffff08'},ticks:{color:'#9898b0'}},y:{grid:{color:'#ffffff08'},ticks:{color:'#9898b0',callback:v=>fmtKK(v)+'₽'}}}}
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INSIGHTS
+// ════════════════════════════════════════════════════════════════════════════
+function renderInsights(){
+  const last2=MONTHS.slice(-2);
+  const prev=last2[0],curr=last2[1];
+  const prevExp=TX.filter(t=>t.m===prev&&t.t==='Расход'&&!SKIP.has(t.c)).reduce((s,t)=>s+Math.abs(t.a),0);
+  const currExp=TX.filter(t=>t.m===curr&&t.t==='Расход'&&!SKIP.has(t.c)).reduce((s,t)=>s+Math.abs(t.a),0);
+  const delta=currExp-prevExp;
+  const pct=prevExp>0?Math.round(Math.abs(delta)/prevExp*100):0;
+
+  const allExp=TX.filter(t=>t.t==='Расход'&&!SKIP.has(t.c)).reduce((s,t)=>s+Math.abs(t.a),0);
+  const avgMo=Math.round(allExp/MONTHS.length);
+  const mostExpCat=catTotals(TX)[0];
+  const foodCafeMo=MONTHS.map(m=>mTotal(m,'Продукты')+mTotal(m,'Кафе и рестораны'));
+  const avgFood=Math.round(foodCafeMo.reduce((s,v)=>s+v,0)/MONTHS.length);
+  const fuelMo=MONTHS.map(m=>mTotal(m,'Топливо'));
+  const avgFuel=Math.round(fuelMo.reduce((s,v)=>s+v,0)/MONTHS.length);
+
+  document.getElementById('ins-grid').innerHTML=`
+    <div class="insight"><div class="insight-icon">📊</div><div><div class="insight-label">Ср. расходы/мес</div><div class="insight-val">${fmt(avgMo)}</div><div class="insight-sub">без переводов и инвестиций</div></div></div>
+    <div class="insight"><div class="insight-icon">${delta<=0?'📉':'📈'}</div><div><div class="insight-label">${ML[curr]} vs ${ML[prev]}</div><div class="insight-val" style="color:${delta<=0?'var(--green)':'var(--red)}'}">${delta<=0?'-':'+'}${fmt(Math.abs(delta))}</div><div class="insight-sub">${pct}% ${delta<=0?'экономия':'перерасход'}</div></div></div>
+    <div class="insight"><div class="insight-icon">🏆</div><div><div class="insight-label">Топ категория</div><div class="insight-val">${mostExpCat?mostExpCat[0]:'—'}</div><div class="insight-sub">${mostExpCat?fmt(mostExpCat[1])+' за всё время':'—'}</div></div></div>
+    <div class="insight"><div class="insight-icon">🍽️</div><div><div class="insight-label">Еда ср./мес</div><div class="insight-val">${fmt(avgFood)}</div><div class="insight-sub">продукты + кафе</div></div></div>
+    <div class="insight"><div class="insight-icon">⛽</div><div><div class="insight-label">Топливо ср./мес</div><div class="insight-val">${fmt(avgFuel)}</div><div class="insight-sub">заправки</div></div></div>
+    <div class="insight"><div class="insight-icon">🔄</div><div><div class="insight-label">Всего транзакций</div><div class="insight-val">${TX.length}</div><div class="insight-sub">${MONTHS.length} месяцев</div></div></div>`;
+
+  const LCATS=['Продукты','Кафе и рестораны','Топливо','Услуги'];
+  if(CH.ln){CH.ln.destroy();}
+  CH.ln=new Chart(document.getElementById('c-lines'),{
+    type:'line',
+    data:{labels:MONTHS.map(m=>ML[m]),datasets:LCATS.map(cat=>({
+      label:cat,data:MONTHS.map(m=>Math.round(mTotal(m,cat))),
+      borderColor:cc(cat),backgroundColor:cc(cat)+'22',
+      borderWidth:2,pointRadius:4,pointBackgroundColor:cc(cat),
+      tension:0.3,fill:false
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{x:{grid:{color:'#ffffff08'},ticks:{color:'#9898b0'}},y:{grid:{color:'#ffffff08'},ticks:{color:'#9898b0',callback:v=>fmtKK(v)}}}}
+  });
+
+  const TOP=['Продукты','Кафе и рестораны','Топливо','Транспорт','Услуги'];
+  document.getElementById('ins-compare').innerHTML=TOP.map(cat=>{
+    const v1=mTotal(prev,cat),v2=mTotal(curr,cat);
+    const d=v2-v1,p=v1>0?Math.round(Math.abs(d)/v1*100):0;
+    const tr=d===0?`<span class="trend t-eq">= ${p}%</span>`:d>0?`<span class="trend t-up">▲ ${p}%</span>`:`<span class="trend t-dn">▼ ${p}%</span>`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="width:8px;height:8px;border-radius:50%;background:${cc(cat)};flex-shrink:0;display:inline-block"></span>
+      <span style="flex:1;font-size:13px">${cat}</span>
+      <span style="font-size:12px;color:var(--text2);width:80px;text-align:right">${v1>0?fmt(v1):'—'}</span>
+      <span style="font-size:13px;font-weight:700;width:80px;text-align:right">${v2>0?fmt(v2):'—'}</span>
+      <span style="width:70px;text-align:right">${tr}</span>
+    </div>`;
+  }).join('')+`<div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:right">${ML[prev]} → ${ML[curr]}</div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CATEGORIES
+// ════════════════════════════════════════════════════════════════════════════
+function renderCategories(){
+  const txs=filter(AM);
+  const cats=catTotals(txs);
+  document.getElementById('cat-lbl').textContent=AM==='all'?'все месяцы':ML[AM];
+  const h=Math.max(cats.length*36+60,260);
+  document.getElementById('cat-cw').style.height=h+'px';
+  if(CH.ch){CH.ch.destroy();}
+  CH.ch=new Chart(document.getElementById('c-cat'),{
+    type:'bar',
+    data:{labels:cats.map(c=>c[0]),datasets:[{data:cats.map(c=>Math.round(c[1])),backgroundColor:cats.map(c=>cc(c[0])+'cc'),borderColor:cats.map(c=>cc(c[0])),borderWidth:1,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt(c.raw)}}},
+      scales:{x:{grid:{color:'#ffffff08'},ticks:{color:'#9898b0',callback:v=>fmtKK(v)}},y:{grid:{display:false},ticks:{color:'#d0d0f0',font:{size:12},autoSkip:false}}}}
+  });
+  const tot=cats.reduce((s,[,v])=>s+v,0);
+  document.getElementById('crank').innerHTML=cats.map(([c,v],i)=>`
+    <div class="crow">
+      <div class="crow-n">${i+1}</div>
+      <div class="crow-dot" style="background:${cc(c)}"></div>
+      <div class="crow-name">${c}</div>
+      <div class="crow-pct">${Math.round(v/tot*100)}%</div>
+      <div class="crow-amt">${fmt(v)}</div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MONTHLY
+// ════════════════════════════════════════════════════════════════════════════
+function renderMonthly(){
+  const TCATS=['Продукты','Кафе и рестораны','Топливо','Транспорт','Услуги','Развлечения','Интернет-покупки','Подписки','Мойка автомобиля','Коммуналка','Прочие расходы','Одежда','Пожертвования'];
+  if(CH.st){CH.st.destroy();}
+  CH.st=new Chart(document.getElementById('c-stack'),{
+    type:'bar',
+    data:{labels:MONTHS.map(m=>ML[m]),datasets:TCATS.map(cat=>({
+      label:cat,data:MONTHS.map(m=>Math.round(mTotal(m,cat))),
+      backgroundColor:cc(cat)+'cc',borderColor:cc(cat),borderWidth:.5,borderRadius:3
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{x:{stacked:true,grid:{color:'#ffffff08'},ticks:{color:'#9898b0'}},y:{stacked:true,grid:{color:'#ffffff08'},ticks:{color:'#9898b0',callback:v=>fmtKK(v)}}}}
+  });
+  const mTots=MONTHS.map(m=>TCATS.reduce((s,cat)=>s+mTotal(m,cat),0));
+  document.getElementById('mtbl').innerHTML=`
+    <thead><tr><th>Категория</th>${MONTHS.map(m=>`<th>${ML[m]}</th>`).join('')}<th>Среднее</th></tr></thead>
+    <tbody>
+      ${TCATS.filter(cat=>MONTHS.some(m=>mTotal(m,cat)>0)).map(cat=>{
+        const vals=MONTHS.map(m=>mTotal(m,cat));
+        const nonZero=vals.filter(v=>v>0);
+        const avg=nonZero.length?nonZero.reduce((s,v)=>s+v,0)/nonZero.length:0;
+        const mx=Math.max(...vals);
+        return `<tr><td><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${cc(cat)};margin-right:7px"></span>${cat}</td>
+          ${vals.map(v=>`<td class="${v>=mx*.85&&v>0?'h2':v>=mx*.5&&v>0?'h1':'h0'}">${fmtK(v)}</td>`).join('')}
+          <td style="color:var(--text2)">${fmtK(avg)}</td></tr>`;
+      }).join('')}
+      <tr style="border-top:2px solid var(--border2);font-weight:700">
+        <td>Итого</td>
+        ${mTots.map(v=>`<td style="color:var(--text)">${fmtK(v)}</td>`).join('')}
+        <td style="color:var(--text2)">${fmtK(mTots.reduce((s,v)=>s+v,0)/MONTHS.length)}</td>
+      </tr>
+    </tbody>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TRANSACTIONS
+// ════════════════════════════════════════════════════════════════════════════
+function renderTx(){txP=0;txPage();}
+function txPage(){
+  const m=document.getElementById('tm').value;
+  const cat=document.getElementById('tc').value;
+  const type=document.getElementById('tt').value;
+  const q=document.getElementById('ts').value;
+  const f=filter(m,cat,type,q).reverse();
+  const tE=f.filter(t=>t.t==='Расход').reduce((s,t)=>s+Math.abs(t.a),0);
+  const tI=f.filter(t=>t.t==='Доход').reduce((s,t)=>s+t.a,0);
+  document.getElementById('tsum').innerHTML=
+    `<span>Найдено: <strong>${f.length}</strong></span>`+
+    `<span>Расходы: <strong style="color:var(--red)">${fmt(tE)}</strong></span>`+
+    `<span>Доходы: <strong style="color:var(--green)">${fmt(tI)}</strong></span>`;
+  const page=f.slice(txP*PS,(txP+1)*PS);
+  const ci2={};let ii=0;
+  document.getElementById('tbody').innerHTML=page.map(t=>{
+    if(!ci2[t.c])ci2[t.c]=ii++;
+    const bcl='badge';
+    const col=cc(t.c);
+    return `<tr>
+      <td class="td-date">${t.d}</td>
+      <td class="td-desc">${t.desc}</td>
+      <td><span class="${bcl}" style="background:${col}22;color:${col}">${t.c}</span></td>
+      <td class="td-amt ${t.a<0?'aneg':'apos'}">${t.a<0?'−':'+'} ${fmt(Math.abs(t.a))}</td>
+    </tr>`;
+  }).join('');
+  const tot=Math.ceil(f.length/PS);
+  document.getElementById('tpag').innerHTML=`
+    <button class="pbtn" onclick="txP=Math.max(0,txP-1);txPage()" ${txP===0?'disabled':''}>‹</button>
+    <span class="pinfo">${txP+1} / ${Math.max(1,tot)}</span>
+    <button class="pbtn" onclick="txP=Math.min(${tot-1},txP+1);txPage()" ${txP>=tot-1?'disabled':''}>›</button>`;
+}
+</script>
+</body>
+</html>
